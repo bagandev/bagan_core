@@ -8,6 +8,90 @@ export type LiquidPlugin = (engine:liquid.LiquidEngine) => void;
  */
 export declare const __napiBindingTarget: 'native' | 'wasm32-wasi' | 'wasm32-wasip1'
 
+export declare namespace collect {
+  /** Returns the default extension groups and ignore list. */
+  export function defaultFiles(): collect.DefaultFiles
+  /** File extension groups and paths excluded from filesystem traversal. */
+  export interface DefaultFiles {
+    /** Markdown file extensions. */
+    markdownExts: Array<string>
+    /** Static asset file extensions. */
+    assetsExts: Array<string>
+    /** Liquid template file extensions. */
+    liquidExts: Array<string>
+    /** YAML file extensions. */
+    yamlExts: Array<string>
+    /** All file extensions recognized by the build. */
+    allExts: Array<string>
+    /** File and directory names excluded from traversal. */
+    ignoreList: Array<string>
+    /** Image file extensions. */
+    imageExts: Array<string>
+    /** Font file extensions. */
+    fontExts: Array<string>
+    /** Audio file extensions. */
+    audioExts: Array<string>
+    /** Video file extensions. */
+    videoExts: Array<string>
+    /** JS file extensions. */
+    jsExts: Array<string>
+    /** Style(CSS,SCSS) file extensions. */
+    styleExts: Array<string>
+  }
+  /**
+   * Recursively collects files with one of the requested extensions.
+   *
+   * Extensions are matched exactly and should not include a leading dot.
+   * Ignore patterns are applied to both files and directories; ignored
+   * directories are not traversed. The returned paths are sorted and
+   * deduplicated.
+   *
+   * # Arguments
+   *
+   * * `entry_dirs` - Directories from which to begin recursive traversal.
+   * * `all_exts` - File extensions to include, without leading dots.
+   * * `ignore_list` - Patterns used to exclude matching files and directories.
+   *
+   * # Errors
+   *
+   * Returns an error if an ignore pattern is invalid or a directory entry
+   * cannot be read.
+   */
+  export function getFilePaths(entryDir: string, allExts: collect.DefaultFiles, ignoreList?: Array<string> | undefined | null): Array<string>
+  export function getMimeType(ext: string, extensions: collect.DefaultFiles): string
+  export type InitFile =
+    | { type: 'Markdown'; inputFilePath: string; outFilePath: string; rawContent: string; rawFrontmatter?: string; rawBodyContent: string; slug: string; mimeType: string; ext: string }
+    | { type: 'Liquid'; inputFilePath: string; outFilePath: string; rawContent: string; slug: string; mimeType: string; ext: string }
+    | { type: 'Js'; inputFilePath: string; outFilePath: string; rawContent: string; slug: string; mimeType: string; ext: string }
+    | { type: 'Css'; inputFilePath: string; outFilePath: string; rawContent: string; slug: string; mimeType: string; ext: string }
+  export function initPageFiles(allFiles: Array<string>, exts: collect.DefaultFiles, outDir: string): Array<collect.InitFile>
+  /**
+   * Separates YAML-style front matter from a Liquid template source.
+   *
+   * The source has front matter only when it begins with a standalone `---`
+   * line and contains a second standalone `---` line. Opening and closing
+   * delimiters may use Unix or Windows line endings.
+   *
+   * # Arguments
+   *
+   * * `source` - Complete Liquid template source.
+   *
+   * # Returns
+   *
+   * A [`SplitTemplateResult`] containing the raw front matter and the remaining
+   * body. If valid front matter is not found, `front_matter` is `None` and
+   * `body` contains the original source.
+   */
+  export function splitFrontMatter(source: string): collect.SplitTemplateResult
+  /** The result of separating a Liquid template into front matter and body. */
+  export interface SplitTemplateResult {
+    /** Raw front matter, including both `---` delimiter lines, if present. */
+    frontMatter?: string
+    /** The template content after the closing front-matter delimiter. */
+    body: string
+  }
+}
+
 export declare namespace ignore {
   export class IgnoreMatcher {
     constructor(patterns: Array<string>)
@@ -293,31 +377,6 @@ export declare namespace liquid {
     LoaderFirst = 'LoaderFirst',
     /** Check the local file system directory first, then fall back to the JS loader. */
     FileSystemFirst = 'FileSystemFirst',
-  }
-  /**
-   * Separates YAML-style front matter from a Liquid template source.
-   *
-   * The source has front matter only when it begins with a standalone `---`
-   * line and contains a second standalone `---` line. Opening and closing
-   * delimiters may use Unix or Windows line endings.
-   *
-   * # Arguments
-   *
-   * * `source` - Complete Liquid template source.
-   *
-   * # Returns
-   *
-   * A [`SplitTemplateResult`] containing the raw front matter and the remaining
-   * body. If valid front matter is not found, `front_matter` is `None` and
-   * `body` contains the original source.
-   */
-  export function splitFrontMatter(source: string): liquid.SplitTemplateResult
-  /** The result of separating a Liquid template into front matter and body. */
-  export interface SplitTemplateResult {
-    /** Raw front matter, including both `---` delimiter lines, if present. */
-    frontMatter?: string
-    /** The template content after the closing front-matter delimiter. */
-    body: string
   }
 }
 

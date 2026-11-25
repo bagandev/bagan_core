@@ -6,7 +6,7 @@
 use napi_derive::napi;
 
 /// The result of separating a Liquid template into front matter and body.
-#[napi(object, namespace = "liquid")]
+#[napi(object, namespace = "collect")]
 pub struct SplitTemplateResult {
     /// Raw front matter, including both `---` delimiter lines, if present.
     pub front_matter: Option<String>,
@@ -29,7 +29,7 @@ pub struct SplitTemplateResult {
 /// A [`SplitTemplateResult`] containing the raw front matter and the remaining
 /// body. If valid front matter is not found, `front_matter` is `None` and
 /// `body` contains the original source.
-#[napi(namespace = "liquid")]
+#[napi(namespace = "collect")]
 pub fn split_front_matter(source: String) -> SplitTemplateResult {
     let (fm, body) = split_front_matter_helper(&source);
     SplitTemplateResult {

@@ -6,7 +6,6 @@
 
 mod front_matter;
 mod hooks;
-pub mod split_matter;
 
 use hooks::{
     block::{LiquidBlock, LiquidBlockArgs, LiquidBlockReturn},
