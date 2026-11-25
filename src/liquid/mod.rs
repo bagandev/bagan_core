@@ -32,7 +32,7 @@ use liquid::partials::LazyCompiler;
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
 
-#[napi(string_enum)]
+#[napi(string_enum, namespace = "liquid")]
 #[derive(Debug, Clone)]
 /// File extensions supported when resolving templates from the filesystem.
 pub enum LiquidExtension {
@@ -52,7 +52,7 @@ impl LiquidExtension {
     }
 }
 
-#[napi]
+#[napi(namespace = "liquid")]
 /// A Liquid renderer that can be extended with JavaScript callbacks.
 ///
 /// Create an engine, optionally register custom behavior or partial sources,
@@ -321,7 +321,7 @@ impl LiquidEngine {
     }
 }
 
-#[napi]
+#[napi(namespace = "liquid")]
 impl LiquidEngine {
     /// Creates an engine with the standard Liquid filters and tags.
     ///
@@ -330,7 +330,7 @@ impl LiquidEngine {
     /// * `include_priority` - Determines whether the partial loader or the
     ///   filesystem is checked first when both are configured. Defaults to
     ///   `LoaderFirst`.
-    #[napi(constructor)]
+    #[napi(constructor, namespace = "liquid")]
     pub fn new(
         #[napi(ts_arg_type = "\"LoaderFirst\" | \"FileSystemFirst\"")] include_priority: Option<
             SourcePriority,
@@ -361,7 +361,7 @@ impl LiquidEngine {
     ///
     /// Returns an error if the callback cannot be converted to a
     /// thread-safe function.
-    #[napi]
+    #[napi(namespace = "liquid")]
     pub fn register_filter(
         &self,
         this: Reference<LiquidEngine>,
@@ -407,7 +407,7 @@ impl LiquidEngine {
     ///
     /// Returns an error if the callback cannot be converted to a
     /// thread-safe function.
-    #[napi]
+    #[napi(namespace = "liquid")]
     pub fn register_tag(
         &self,
         this: Reference<LiquidEngine>,
@@ -454,7 +454,7 @@ impl LiquidEngine {
     ///
     /// Returns an error if the callback cannot be converted to a
     /// thread-safe function.
-    #[napi]
+    #[napi(namespace = "liquid")]
     pub fn register_block(
         &self,
         this: Reference<LiquidEngine>,
@@ -496,7 +496,7 @@ impl LiquidEngine {
     ///
     /// * `this` - Engine reference returned for chaining.
     /// * `dir` - Filesystem directory containing partial templates.
-    #[napi]
+    #[napi(namespace = "liquid")]
     pub fn set_partials_dir(
         &self,
         this: Reference<LiquidEngine>,
@@ -520,7 +520,7 @@ impl LiquidEngine {
     ///
     /// * `this` - Engine reference returned for chaining.
     /// * `dir` - Filesystem directory containing layout templates.
-    #[napi]
+    #[napi(namespace = "liquid")]
     pub fn set_layouts_dir(
         &self,
         this: Reference<LiquidEngine>,
@@ -542,7 +542,7 @@ impl LiquidEngine {
     ///
     /// * `this` - Engine reference returned for chaining.
     /// * `extensions` - Extensions to try, in priority order.
-    #[napi]
+    #[napi(namespace = "liquid")]
     pub fn set_layout_extensions(
         &self,
         this: Reference<LiquidEngine>,
@@ -574,7 +574,7 @@ impl LiquidEngine {
     ///
     /// * `this` - Engine reference returned for chaining.
     /// * `extensions` - Extensions to try, in priority order.
-    #[napi]
+    #[napi(namespace = "liquid")]
     pub fn set_partial_extensions(
         &self,
         this: Reference<LiquidEngine>,
@@ -613,7 +613,7 @@ impl LiquidEngine {
     ///
     /// Returns an error if the callback cannot be converted to a
     /// thread-safe function.
-    #[napi]
+    #[napi(namespace = "liquid")]
     pub fn register_partial_loader(
         &self,
         this: Reference<LiquidEngine>,
@@ -650,7 +650,7 @@ impl LiquidEngine {
     ///
     /// Returns an error if the callback cannot be converted to a
     /// thread-safe function.
-    #[napi]
+    #[napi(namespace = "liquid")]
     pub fn register_layout_loader(
         &self,
         this: Reference<LiquidEngine>,
@@ -679,7 +679,7 @@ impl LiquidEngine {
     ///
     /// * `this` - Engine reference returned for chaining.
     /// * `priority` - Source to check first when both are configured.
-    #[napi]
+    #[napi(namespace = "liquid")]
     pub fn set_layout_priority(
         &self,
         this: Reference<LiquidEngine>,
@@ -701,7 +701,7 @@ impl LiquidEngine {
     ///
     /// * `this` - Engine reference returned for chaining.
     /// * `priority` - Source to check first when both are configured.
-    #[napi]
+    #[napi(namespace = "liquid")]
     pub fn set_partial_priority(
         &self,
         this: Reference<LiquidEngine>,
@@ -730,7 +730,7 @@ impl LiquidEngine {
     ///
     /// Returns an error if the engine reference cannot be cloned or the plugin
     /// call fails.
-    #[napi(js_name = "use")]
+    #[napi(js_name = "use", namespace = "liquid")]
     pub fn use_plugin(
         &self,
         env: Env,
@@ -758,7 +758,7 @@ impl LiquidEngine {
     /// Returns an error if the parser or template cannot be built, the context
     /// cannot be converted, rendering fails, a synchronization lock is
     /// poisoned, or the worker thread panics.
-    #[napi]
+    #[napi(namespace = "liquid")]
     pub async fn render(
         &self,
         template_str: String,

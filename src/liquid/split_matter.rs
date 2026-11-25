@@ -1,12 +1,35 @@
+//! Utilities for separating Liquid front matter from the template body.
+//!
+//! Front matter must start on the first non-whitespace character of the source
+//! and use standalone `---` delimiter lines.
+
 use napi_derive::napi;
 
-#[napi(object)]
+/// The result of separating a Liquid template into front matter and body.
+#[napi(object, namespace = "liquid")]
 pub struct SplitTemplateResult {
+    /// Raw front matter, including both `---` delimiter lines, if present.
     pub front_matter: Option<String>,
+    /// The template content after the closing front-matter delimiter.
     pub body: String,
 }
 
-#[napi]
+/// Separates YAML-style front matter from a Liquid template source.
+///
+/// The source has front matter only when it begins with a standalone `---`
+/// line and contains a second standalone `---` line. Opening and closing
+/// delimiters may use Unix or Windows line endings.
+///
+/// # Arguments
+///
+/// * `source` - Complete Liquid template source.
+///
+/// # Returns
+///
+/// A [`SplitTemplateResult`] containing the raw front matter and the remaining
+/// body. If valid front matter is not found, `front_matter` is `None` and
+/// `body` contains the original source.
+#[napi(namespace = "liquid")]
 pub fn split_front_matter(source: String) -> SplitTemplateResult {
     let (fm, body) = split_front_matter_helper(&source);
     SplitTemplateResult {
@@ -15,8 +38,10 @@ pub fn split_front_matter(source: String) -> SplitTemplateResult {
     }
 }
 
-/// Extracts the raw front matter (including opening and closing `---`) and the remaining body.
-/// Returns `(Some(front_matter), body)` if valid delimiters exist, or `(None, source)` otherwise.
+/// Extracts raw front matter and the remaining template body.
+///
+/// Returns `(Some(front_matter), body)` when both delimiter lines are valid,
+/// or `(None, source)` when front matter is absent or unclosed.
 fn split_front_matter_helper(source: &str) -> (Option<&str>, &str) {
     let trimmed = source.trim_start();
     if !trimmed.starts_with("---") {

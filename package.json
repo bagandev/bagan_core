@@ -1,0 +1,51 @@
+{
+  "name": "@bagandev/bagan_core",
+  "version": "0.1.0",
+  "description": "",
+  "scripts": {
+    "local": "napi build --platform --config-path napi.config.json --output-dir loc/bc",
+    "loc": "bash scripts/local"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bagandev/bagan_core.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/bagandev/bagan_core/issues"
+  },
+  "homepage": "https://github.com/bagandev/bagan_core#readme",
+  "main": "index.cjs",
+  "module": "index.mjs",
+  "types": "index.d.cts",
+  "exports": {
+    ".": {
+      "require": {
+        "default": "./index.cjs",
+        "types": "./index.d.ts"
+      },
+      "import": {
+        "default": "./index.mjs",
+        "types": "./index.d.ts"
+      }
+    }
+  },
+  "devDependencies": {
+    "@emnapi/core": "^2.0.0-alpha.5",
+    "@emnapi/runtime": "^2.0.0-alpha.5",
+    "@napi-rs/cli": "^3.9.1",
+    "emnapi": "^2.0.0-alpha.5",
+    "oxfmt": "^0.76.0",
+    "oxlint": "^1.91.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "README.md",
+    "LICENSE",
+    "index.cjs",
+    "index.mjs",
+    "index.d.ts"
+  ]
+}

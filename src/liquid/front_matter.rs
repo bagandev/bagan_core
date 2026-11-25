@@ -1,14 +1,42 @@
+//! Parsing for YAML and Liquid layout declarations at the start of templates.
+
 use napi_derive::napi;
 
-#[napi(object)]
+/// Parsed template metadata and the remaining Liquid source.
+///
+/// Front matter entries are available as a JSON object, with `layout` removed
+/// and exposed separately through [`layout`](Self::layout).
+#[napi(object, namespace = "liquid")]
 #[derive(Debug, Default)]
 pub struct ParsedFrontmatter {
+    /// Layout name declared in YAML front matter or by a top-level layout tag.
     pub layout: Option<String>,
+    /// Template source after the front-matter or layout declaration.
     pub body: String,
+    /// Parsed YAML front-matter entries, excluding `layout`.
+    #[napi(ts_type = "Record<string,any>")]
     pub front_matter: serde_json::Value,
 }
 
-#[napi]
+/// Parses template metadata and separates it from the Liquid body.
+///
+/// The function first recognizes Jekyll-style YAML front matter beginning with
+/// a standalone `---` line. It then recognizes a top-level
+/// `{% layout "name" %}` tag. If neither form is present, the original source
+/// is returned unchanged.
+///
+/// Leading whitespace before the declaration is ignored for recognition, but
+/// is not included in the parsed front matter or layout-tag body.
+///
+/// # Arguments
+///
+/// * `source` - Complete Liquid template source.
+///
+/// # Errors
+///
+/// Returns an N-API error when YAML front matter is invalid or is not a
+/// key-value mapping.
+#[napi(namespace = "liquid")]
 pub fn front_matter(source: String) -> napi::Result<ParsedFrontmatter> {
     let trimmed = source.trim_start();
 

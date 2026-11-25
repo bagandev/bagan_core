@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ARG=$1
+
+if [[ "$ARG" == "watch" ]]; then
+node loc/watch.mjs
+fi
+
+if [[ "$ARG" == "ignore" ]]; then
+node loc/ignore.mjs
+fi

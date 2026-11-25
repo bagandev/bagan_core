@@ -1,38 +1,126 @@
-use std::path::Path;
+//! Debounced filesystem watching for Node.js.
+//!
+//! [`FsWatcher`] reports create, modify, and remove events for watched paths.
+//! Optional glob patterns can exclude paths, and the debounce window can be
+//! configured when creating the watcher.
+
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::time::Duration;
 
 use globset::{Glob, GlobSet, GlobSetBuilder};
 use napi::bindgen_prelude::*;
 use napi::threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode};
 use napi_derive::napi;
-use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
+use notify_debouncer_full::notify::event::{ModifyKind, RenameMode};
+use notify_debouncer_full::notify::{Event, EventKind, RecommendedWatcher, RecursiveMode};
+use notify_debouncer_full::{DebounceEventResult, Debouncer, RecommendedCache, new_debouncer};
 
-#[napi(object, namespace = "watcher")]
+#[napi(object, namespace = "watch")]
+/// A filesystem change reported to the JavaScript callback.
 pub struct WatchEvent {
+    /// Change type: `"create"`, `"modify"`, or `"remove"`.
+    #[napi(ts_type = "'create' | 'modify' | 'remove'")]
     pub kind: String,
-    pub paths: Vec<String>,
+    /// Path associated with the change.
+    pub path: String,
 }
 
-#[napi(object, namespace = "watcher")]
+#[napi(object, namespace = "watch")]
+/// Options for configuring an [`FsWatcher`].
 pub struct WatchOptions {
+    /// Glob patterns for paths to exclude from reported events.
     pub ignore: Option<Vec<String>>,
+    /// Debounce window in milliseconds. Defaults to 100 ms.
+    pub debounce_ms: Option<u32>,
 }
 
-#[napi(namespace = "watcher")]
+#[napi(namespace = "watch")]
+/// Watches filesystem paths and sends debounced changes to a JavaScript callback.
 pub struct FsWatcher {
-    watcher: Option<RecommendedWatcher>,
+    debouncer: Option<Debouncer<RecommendedWatcher, RecommendedCache>>,
 }
 
-#[napi(namespace = "watcher")]
+fn classify_event(event: Event, ignore_set: &GlobSet) -> Vec<WatchEvent> {
+    let mut actions = Vec::new();
+
+    let push_if_valid = |kind: &str, path: PathBuf, out: &mut Vec<WatchEvent>| {
+        if !ignore_set.is_match(&path) {
+            out.push(WatchEvent {
+                kind: kind.to_string(),
+                path: path.to_string_lossy().into_owned(),
+            });
+        }
+    };
+
+    match event.kind {
+        EventKind::Create(_) => {
+            for path in event.paths {
+                push_if_valid("create", path, &mut actions);
+            }
+        }
+        EventKind::Modify(ModifyKind::Name(rename_mode)) => match rename_mode {
+            RenameMode::Both => {
+                let mut iter = event.paths.into_iter();
+                if let Some(old_path) = iter.next() {
+                    push_if_valid("remove", old_path, &mut actions);
+                }
+                if let Some(new_path) = iter.next() {
+                    push_if_valid("create", new_path, &mut actions);
+                }
+            }
+            RenameMode::From => {
+                for path in event.paths {
+                    push_if_valid("remove", path, &mut actions);
+                }
+            }
+            RenameMode::To => {
+                for path in event.paths {
+                    push_if_valid("create", path, &mut actions);
+                }
+            }
+            _ => {
+                for path in event.paths {
+                    let kind = if path.exists() { "create" } else { "remove" };
+                    push_if_valid(kind, path, &mut actions);
+                }
+            }
+        },
+        EventKind::Modify(_) => {
+            for path in event.paths {
+                push_if_valid("modify", path, &mut actions);
+            }
+        }
+        EventKind::Remove(_) => {
+            for path in event.paths {
+                push_if_valid("remove", path, &mut actions);
+            }
+        }
+        _ => {}
+    }
+
+    actions
+}
+
+#[napi(namespace = "watch")]
 impl FsWatcher {
-    #[napi(constructor, namespace = "watcher")]
+    #[napi(constructor, namespace = "watch")]
+    /// Creates a watcher with a callback and optional configuration.
+    ///
+    /// The callback receives one [`WatchEvent`] per reported path. Invalid
+    /// ignore patterns and watcher initialization failures are returned as
+    /// errors.
     pub fn new(
         callback: Arc<ThreadsafeFunction<WatchEvent, ()>>,
         options: Option<WatchOptions>,
     ) -> Result<Self> {
-        // 1. Compile ignore glob patterns once
+        let mut debounce_ms = 100u64;
         let mut builder = GlobSetBuilder::new();
+
         if let Some(opts) = options {
+            if let Some(ms) = opts.debounce_ms {
+                debounce_ms = ms as u64;
+            }
             if let Some(patterns) = opts.ignore {
                 for pat in patterns {
                     let glob = Glob::new(&pat).map_err(|e| {
@@ -42,49 +130,45 @@ impl FsWatcher {
                 }
             }
         }
-        let ignore_set: Arc<GlobSet> = Arc::new(
+
+        let ignore_set = Arc::new(
             builder
                 .build()
                 .map_err(|e| Error::from_reason(e.to_string()))?,
         );
 
-        // 2. Filter ignored paths inside the background OS thread before crossing to JS
-        let watcher = notify::recommended_watcher(move |res: notify::Result<Event>| {
-            match res {
-                Ok(event) => {
-                    let filtered_paths: Vec<String> = event
-                        .paths
-                        .into_iter()
-                        .filter(|p| !ignore_set.is_match(p))
-                        .map(|p| p.to_string_lossy().into_owned())
-                        .collect();
-
-                    // Skip invoking JS callback if all paths in the event were ignored
-                    if filtered_paths.is_empty() {
-                        return;
+        // Passing `None` for tick_rate defaults to 1/4 of the timeout duration
+        let debouncer = new_debouncer(
+            Duration::from_millis(debounce_ms),
+            None,
+            move |result: DebounceEventResult| match result {
+                Ok(debounced_events) => {
+                    for debounced in debounced_events {
+                        for payload in classify_event(debounced.event, &ignore_set) {
+                            callback.call(Ok(payload), ThreadsafeFunctionCallMode::NonBlocking);
+                        }
                     }
-
-                    let payload = WatchEvent {
-                        kind: format!("{:?}", event.kind),
-                        paths: filtered_paths,
-                    };
-                    callback.call(Ok(payload), ThreadsafeFunctionCallMode::NonBlocking);
                 }
-                Err(err) => {
-                    let napi_err = Error::from_reason(err.to_string());
-                    callback.call(Err(napi_err), ThreadsafeFunctionCallMode::NonBlocking);
+                Err(errors) => {
+                    for err in errors {
+                        let napi_err = Error::from_reason(err.to_string());
+                        callback.call(Err(napi_err), ThreadsafeFunctionCallMode::NonBlocking);
+                    }
                 }
-            }
-        })
+            },
+        )
         .map_err(|e| Error::from_reason(e.to_string()))?;
 
         Ok(Self {
-            watcher: Some(watcher),
+            debouncer: Some(debouncer),
         })
     }
 
-    /// Accepts a single file/folder path OR an array of files and folders
-    #[napi(namespace = "watcher")]
+    #[napi(namespace = "watch")]
+    /// Starts watching one path or a list of paths.
+    ///
+    /// Watching is recursive by default. Set `recursive` to `false` to watch
+    /// only the specified paths' immediate entries.
     pub fn watch(
         &mut self,
         targets: Either<String, Vec<String>>,
@@ -101,9 +185,9 @@ impl FsWatcher {
             Either::B(multiple) => multiple,
         };
 
-        if let Some(watcher) = &mut self.watcher {
+        if let Some(debouncer) = &mut self.debouncer {
             for target in paths {
-                watcher.watch(Path::new(&target), mode).map_err(|e| {
+                debouncer.watch(Path::new(&target), mode).map_err(|e| {
                     Error::from_reason(format!("Failed to watch '{}': {}", target, e))
                 })?;
             }
@@ -111,16 +195,17 @@ impl FsWatcher {
         Ok(())
     }
 
-    #[napi(namespace = "watcher")]
+    #[napi(namespace = "watch")]
+    /// Stops watching one path or a list of paths.
     pub fn unwatch(&mut self, targets: Either<String, Vec<String>>) -> Result<()> {
         let paths = match targets {
             Either::A(single) => vec![single],
             Either::B(multiple) => multiple,
         };
 
-        if let Some(watcher) = &mut self.watcher {
+        if let Some(debouncer) = &mut self.debouncer {
             for target in paths {
-                watcher
+                debouncer
                     .unwatch(Path::new(&target))
                     .map_err(|e| Error::from_reason(e.to_string()))?;
             }
@@ -128,8 +213,10 @@ impl FsWatcher {
         Ok(())
     }
 
-    #[napi(namespace = "watcher")]
+    #[napi(namespace = "watch")]
+    /// Stops the watcher and releases its callback.
     pub fn close(&mut self) {
-        self.watcher.take();
+        // Dropping the debouncer stops its background worker thread and releases the callback
+        self.debouncer.take();
     }
 }

@@ -2,8 +2,9 @@
 //!
 //! How Partials Work in liquid 0.26
 //!
-//! `ParserBuilder::partials()`` expects a PartialCompiler,
-//! such as `EagerCompiler<T>`` or `LazyCompiler<T>``, where T implements `liquid::partials::PartialSource`.
+//! `ParserBuilder::partials()` expects a `PartialCompiler`,
+//! such as `EagerCompiler<T>` or `LazyCompiler<T>`, where `T` implements
+//! `liquid::partials::PartialSource`.
 //!
 //! - `EagerCompiler`: Compiles partials once when `build()` is called (fast, ideal for known folders).
 //! - `LazyCompiler`: Loads and compiles partials on demand during `parser.parse()` (ideal for dynamic JS callbacks or databases).
@@ -16,7 +17,7 @@ use std::borrow::Cow;
 use std::path::{Component, Path, PathBuf};
 use std::sync::Arc;
 
-#[napi(string_enum)]
+#[napi(string_enum, namespace = "liquid")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SourcePriority {
     /// Check the custom JS partial loader first, then fall back to disk.
