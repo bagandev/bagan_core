@@ -11,6 +11,5 @@
     "x86_64-pc-windows-msvc",
     "aarch64-pc-windows-msvc"
   ],
-  "dtsHeader": "export type LiquidPlugin = (engine:LiquidEngine) => void;",
   "dtsHeaderFile": "types.txt"
 }

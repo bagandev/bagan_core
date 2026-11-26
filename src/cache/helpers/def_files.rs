@@ -6,7 +6,7 @@ pub struct DefaultFiles {
     /// Markdown file extensions.
     pub markdown_exts: Vec<String>,
     /// Static asset file extensions.
-    pub assets_exts: Vec<String>,
+    pub binary_exts: Vec<String>,
     /// Liquid template file extensions.
     pub liquid_exts: Vec<String>,
     /// YAML file extensions.
@@ -82,12 +82,8 @@ pub fn default_files() -> DefaultFiles {
     ];
     let js_exts = vec!["js".to_string(), "mjs".to_string(), "map".to_string()];
     let style_exts = vec!["css".to_string(), "scss".to_string(), "map".to_string()];
-    let assets_exts = [
-        vec![
-            "pdf".to_string(),
-            "wasm".to_string(),
-            "webmanifest".to_string(),
-        ],
+    let binary_exts = [
+        vec!["pdf".to_string(), "wasm".to_string()],
         font_exts.clone(),
         audio_exts.clone(),
         video_exts.clone(),
@@ -97,7 +93,7 @@ pub fn default_files() -> DefaultFiles {
     let yaml_exts = vec!["yml".to_string(), "yaml".to_string()];
     let all_exts = [
         markdown_exts.clone(),
-        assets_exts.clone(),
+        binary_exts.clone(),
         liquid_exts.clone(),
         yaml_exts.clone(),
         image_exts.clone(),
@@ -121,7 +117,7 @@ pub fn default_files() -> DefaultFiles {
     ];
     DefaultFiles {
         markdown_exts,
-        assets_exts,
+        binary_exts,
         liquid_exts,
         yaml_exts,
         all_exts,

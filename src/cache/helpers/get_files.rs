@@ -65,7 +65,7 @@ pub fn get_file_paths(
 #[cfg(test)]
 mod tests {
     use super::get_file_paths;
-    use crate::collect::def_files::default_files;
+    use crate::cache::helpers::def_files::default_files;
     use std::{
         fs,
         path::{Path, PathBuf},

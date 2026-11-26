@@ -1,2 +1,3 @@
 // Liquid
 export type LiquidPlugin = (engine:liquid.LiquidEngine) => void;
+export type DataContext = Record<string,any>;
