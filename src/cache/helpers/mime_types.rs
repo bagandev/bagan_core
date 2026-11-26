@@ -1,7 +1,7 @@
 use super::def_files::DefaultFiles;
 use napi_derive::napi;
 
-#[napi(namespace = "collect")]
+#[napi(namespace = "cache")]
 pub fn get_mime_type(ext: String, extensions: DefaultFiles) -> napi::Result<String> {
     let mut result = match ext.as_str() {
         "pdf" => "application/pdf",

@@ -29,7 +29,7 @@ pub struct SplitTemplateResult {
 /// A [`SplitTemplateResult`] containing the raw front matter and the remaining
 /// body. If valid front matter is not found, `front_matter` is `None` and
 /// `body` contains the original source.
-#[napi(namespace = "collect")]
+#[napi(namespace = "cache")]
 pub fn split_front_matter(source: String) -> SplitTemplateResult {
     let (fm, body) = split_front_matter_helper(&source);
     SplitTemplateResult {

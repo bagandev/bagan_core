@@ -20,7 +20,7 @@ use std::{fs, path::PathBuf};
 ///
 /// Returns an error if an ignore pattern is invalid or a directory entry
 /// cannot be read.
-#[napi(namespace = "collect")]
+#[napi(namespace = "cache")]
 pub fn get_file_paths(
     entry_dir: PathBuf,
     all_exts: DefaultFiles,

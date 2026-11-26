@@ -1,4 +1,3 @@
-pub mod ca;
 pub mod cache;
 pub mod ignore;
 pub mod liquid;

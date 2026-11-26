@@ -1,6 +1,6 @@
 use napi_derive::napi;
 /// File extension groups and paths excluded from filesystem traversal.
-#[napi(object, namespace = "collect")]
+#[napi(object, namespace = "cache")]
 #[derive(Debug, Default, Clone)]
 pub struct DefaultFiles {
     /// Markdown file extensions.
@@ -28,7 +28,7 @@ pub struct DefaultFiles {
     /// Style(CSS,SCSS) file extensions.
     pub style_exts: Vec<String>,
 }
-#[napi(namespace = "collect")]
+#[napi(namespace = "cache")]
 /// Returns the default extension groups and ignore list.
 pub fn default_files() -> DefaultFiles {
     let markdown_exts = vec![

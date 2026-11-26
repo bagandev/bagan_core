@@ -68,7 +68,7 @@ async fn read_data_dir_recursive(dir: PathBuf) -> std::result::Result<Value, Str
 
     Ok(Value::Object(root))
 }
-#[napi(namespace = "collect", ts_return_type = "Promise<DataContext>")]
+#[napi(namespace = "cache", ts_return_type = "Promise<DataContext>")]
 pub async fn load_merged_data_dirs(base_dir: String, override_dir: String) -> Result<Value> {
     let (base_res, override_res) = tokio::join!(
         read_data_dir_recursive(Path::new(&base_dir).to_path_buf()),
@@ -80,4 +80,9 @@ pub async fn load_merged_data_dirs(base_dir: String, override_dir: String) -> Re
 
     deep_merge(&mut merged, override_data);
     Ok(merged)
+}
+
+pub async fn load_and_deep_merge_dirs(dirs: &[String]) -> Result<Value> {
+    let data = load_merged_data_dirs(dirs[0].clone(), dirs[1].clone()).await?;
+    Ok(serde_json::json!(data))
 }
