@@ -158,7 +158,7 @@ fn resolve_theme_config<P: AsRef<Path>>(
     }
 }
 
-#[napi]
+#[napi(namespace = "config")]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ResolvedThemeConfig {
